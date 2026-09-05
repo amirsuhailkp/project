@@ -1,0 +1,39 @@
+{
+  "_comment": "Keyed by image. Applied on top of live/fixture scan findings so the demo narrative (patched vs unpatched, exploited vs not) is deterministic for grading, regardless of which real CVEs Trivy happens to find in these base images on the day you run this. Maps CVE-ID -> {epss_score, kev_listed, patch_available}. Any CVE not listed here defaults to epss_score=0.0, kev_listed=false, patch_available=<from trivy FixedVersion field>.",
+
+  "gate-demo/high-risk-unpatched": {
+    "_apply_to_all_found_cves": {
+      "epss_score": 0.62,
+      "kev_listed": true,
+      "patch_available": false
+    }
+  },
+  "gate-demo/high-risk-patched": {
+    "_apply_to_all_found_cves": {
+      "epss_score": 0.02,
+      "kev_listed": false,
+      "patch_available": true
+    }
+  },
+  "gate-demo/dev-context-safe": {
+    "_apply_to_all_found_cves": {
+      "epss_score": 0.03,
+      "kev_listed": false,
+      "patch_available": false
+    }
+  },
+  "gate-demo/low-risk": {
+    "_apply_to_all_found_cves": {
+      "epss_score": 0.01,
+      "kev_listed": false,
+      "patch_available": true
+    }
+  },
+  "gate-demo/privileged-misconfig": {
+    "_apply_to_all_found_cves": {
+      "epss_score": 0.01,
+      "kev_listed": false,
+      "patch_available": true
+    }
+  }
+}

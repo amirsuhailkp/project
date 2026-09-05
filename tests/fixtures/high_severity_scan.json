@@ -1,0 +1,23 @@
+{
+  "SchemaVersion": 2,
+  "ArtifactName": "fixture/high-severity",
+  "Results": [
+    {
+      "Target": "fixture/high-severity (debian 9)",
+      "Class": "os-pkgs",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2021-99999",
+          "PkgName": "openssl",
+          "InstalledVersion": "1.1.0f-3",
+          "FixedVersion": "",
+          "Severity": "CRITICAL",
+          "Title": "Fictitious buffer overflow in OpenSSL used for fixture testing",
+          "CVSS": {
+            "nvd": {"V3Score": 9.8}
+          }
+        }
+      ]
+    }
+  ]
+}

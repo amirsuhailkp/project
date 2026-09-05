@@ -1,0 +1,42 @@
+# Central configuration for the context-aware container security gate.
+
+severity_gate:
+  # Traditional gate blocks if ANY finding is at or above this severity.
+  block_threshold: "HIGH"     # one of: LOW, MEDIUM, HIGH, CRITICAL
+  severity_order: ["UNKNOWN", "LOW", "MEDIUM", "HIGH", "CRITICAL"]
+
+enrichment:
+  epss_api_url: "https://api.first.org/data/v1/epss"
+  epss_exploit_probability_warn: 0.10   # EPSS score above this is "meaningful exploit likelihood"
+  epss_exploit_probability_high: 0.50
+  kev_feed_url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+  request_timeout_seconds: 10
+
+llm_gate:
+  provider: "openai_compatible"
+  # Point this at your self-hosted FreeLLMAPI router's OpenAI-compatible endpoint
+  # (https://github.com/tashfeenahmed/freellmapi). Default assumes the router is
+  # running locally per its Quick Start (docker one-liner -> http://localhost:3001).
+  base_url: "http://localhost:3001/v1"
+  # Name of the environment variable holding your FreeLLMAPI unified key
+  # (looks like "freellmapi-..."), grabbed from the router's Keys page.
+  api_key_env: "FREELLMAPI_API_KEY"
+  # "auto" lets the router's smart routing pick the best available free model;
+  # "auto:smart" / "auto:fast" bias toward capability or speed; or pin an exact
+  # model id from your router's /v1/models list (e.g. a specific Groq/Mistral/
+  # Cerebras model) for reproducible grading runs.
+  model: "auto"
+  max_tokens: 1024
+  temperature: 0.0
+  consistency_runs: 3     # number of repeated calls per image to measure decision consistency
+
+scanner:
+  trivy_binary: "trivy"
+  trivy_timeout_seconds: 300
+  severity_scan_levels: "LOW,MEDIUM,HIGH,CRITICAL"
+
+paths:
+  containers_dir: "examples/containers"
+  deployment_context_file: "examples/deployment_context.json"
+  ground_truth_file: "examples/ground_truth.json"
+  results_dir: "results"

@@ -1,0 +1,11 @@
+{
+  "SchemaVersion": 2,
+  "ArtifactName": "fixture/low-severity",
+  "Results": [
+    {
+      "Target": "fixture/low-severity (alpine 3.20)",
+      "Class": "os-pkgs",
+      "Vulnerabilities": []
+    }
+  ]
+}

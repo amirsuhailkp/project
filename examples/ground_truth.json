@@ -1,0 +1,9 @@
+{
+  "_comment": "Expert-labeled 'correct' decision per image, used by evaluator.py to score accuracy and false-positive block rate. These reflect what a competent human security analyst would decide given the full context (severity + exploitability + patch status + config risk + deployment context) -- i.e. they are the target the LLM gate is trying to approximate, and the standard the severity-only gate is measured against too.",
+
+  "gate-demo/low-risk": "ALLOW",
+  "gate-demo/high-risk-unpatched": "BLOCK",
+  "gate-demo/high-risk-patched": "ALLOW",
+  "gate-demo/privileged-misconfig": "BLOCK",
+  "gate-demo/dev-context-safe": "ALLOW"
+}

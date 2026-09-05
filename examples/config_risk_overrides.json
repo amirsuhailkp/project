@@ -1,0 +1,16 @@
+{
+  "_comment": "Dockerfiles can't express runtime flags like --privileged or -v /var/run/docker.sock. This file lets run_evaluation.py simulate the true run profile described in each Dockerfile's header comment, without requiring you to actually launch a privileged container to grade this project. Delete an entry to fall back to pure static Dockerfile analysis for that image.",
+
+  "gate-demo/privileged-misconfig": {
+    "runs_as_root": true,
+    "privileged": true,
+    "host_network": true,
+    "sensitive_mounts": ["/var/run/docker.sock"],
+    "capabilities_added": ["SYS_ADMIN"],
+    "notes": [
+      "Simulated run profile: docker run --privileged --user root -v /var/run/docker.sock:/var/run/docker.sock --network host",
+      "Full host device and kernel access via --privileged.",
+      "Docker socket mount grants effective root on the HOST, not just the container."
+    ]
+  }
+}

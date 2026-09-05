@@ -1,0 +1,27 @@
+{
+  "gate-demo/low-risk": {
+    "environment": "dev",
+    "internet_facing": false,
+    "namespace": "sandbox"
+  },
+  "gate-demo/high-risk-unpatched": {
+    "environment": "prod",
+    "internet_facing": true,
+    "namespace": "public-api"
+  },
+  "gate-demo/high-risk-patched": {
+    "environment": "prod",
+    "internet_facing": false,
+    "namespace": "internal-services"
+  },
+  "gate-demo/privileged-misconfig": {
+    "environment": "prod",
+    "internet_facing": true,
+    "namespace": "public-api"
+  },
+  "gate-demo/dev-context-safe": {
+    "environment": "dev",
+    "internet_facing": false,
+    "namespace": "sandbox"
+  }
+}

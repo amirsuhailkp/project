@@ -1,0 +1,103 @@
+[
+  {
+    "image": "gate-demo/low-risk",
+    "severity_gate_result": {
+      "decision": "ALLOW",
+      "justification": "No findings at or above MEDIUM severity.",
+      "risk_factors": [],
+      "latency_seconds": 2.1
+    },
+    "llm_gate_result": {
+      "decision": "ALLOW",
+      "justification": "No meaningful vulnerabilities, non-root, dev environment, not internet-facing. Negligible exploitability and blast radius.",
+      "risk_factors": [],
+      "latency_seconds": 3.4,
+      "consistency_pct": 100.0
+    }
+  },
+  {
+    "image": "gate-demo/high-risk-unpatched",
+    "severity_gate_result": {
+      "decision": "BLOCK",
+      "justification": "Finding has severity CRITICAL, at or above the configured block threshold.",
+      "risk_factors": [
+        "CVE-2017-1000, simulated"
+      ],
+      "latency_seconds": 4.8
+    },
+    "llm_gate_result": {
+      "decision": "BLOCK",
+      "justification": "CRITICAL severity CVE with no patch available, actively exploited in the wild (KEV-listed), deployed on an internet-facing production service. Exploitability, reachability, and blast radius are all high.",
+      "risk_factors": [
+        "CVE-2017-1000, simulated",
+        "kev_listed",
+        "internet_facing_prod"
+      ],
+      "latency_seconds": 5.9,
+      "consistency_pct": 100.0
+    }
+  },
+  {
+    "image": "gate-demo/high-risk-patched",
+    "severity_gate_result": {
+      "decision": "BLOCK",
+      "justification": "Finding has severity HIGH, at or above the configured block threshold. No other context considered.",
+      "risk_factors": [
+        "CVE-2022-4000, simulated"
+      ],
+      "latency_seconds": 3.9
+    },
+    "llm_gate_result": {
+      "decision": "ALLOW",
+      "justification": "HIGH severity by CVSS score, but a patch is already applied, EPSS exploit probability is negligible, and it is not KEV-listed. Deployed internally, not internet-facing. Real-world risk is low despite the severity label.",
+      "risk_factors": [
+        "CVE-2022-4000, simulated",
+        "patch_available"
+      ],
+      "latency_seconds": 5.2,
+      "consistency_pct": 100.0
+    }
+  },
+  {
+    "image": "gate-demo/privileged-misconfig",
+    "severity_gate_result": {
+      "decision": "ALLOW",
+      "justification": "No findings at or above MEDIUM severity.",
+      "risk_factors": [],
+      "latency_seconds": 2.3
+    },
+    "llm_gate_result": {
+      "decision": "BLOCK",
+      "justification": "Almost no CVEs, but the container runs privileged, as root, with the Docker socket mounted, on an internet-facing production host. A single compromised process can pivot to full host control regardless of CVE counts.",
+      "risk_factors": [
+        "privileged",
+        "docker_sock_mount",
+        "runs_as_root",
+        "internet_facing_prod"
+      ],
+      "latency_seconds": 4.6,
+      "consistency_pct": 100.0
+    }
+  },
+  {
+    "image": "gate-demo/dev-context-safe",
+    "severity_gate_result": {
+      "decision": "BLOCK",
+      "justification": "Finding has severity HIGH, at or above the configured block threshold.",
+      "risk_factors": [
+        "CVE-2023-5555, simulated"
+      ],
+      "latency_seconds": 4.1
+    },
+    "llm_gate_result": {
+      "decision": "WARN",
+      "justification": "HIGH severity CVE with no known public exploit and no patch yet, but confined to a dev environment with no internet exposure. Flagged for developer awareness rather than blocked, since blast radius is limited.",
+      "risk_factors": [
+        "CVE-2023-5555, simulated",
+        "dev_environment"
+      ],
+      "latency_seconds": 5.5,
+      "consistency_pct": 66.7
+    }
+  }
+]

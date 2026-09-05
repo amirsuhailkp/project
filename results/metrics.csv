@@ -1,0 +1,3 @@
+gate,decision_accuracy_pct,false_positive_block_rate_pct,decision_consistency_pct,avg_latency_seconds
+severity_only,40.0,66.7,100.0,3.44
+llm_context_aware,80.0,0.0,93.3,4.92

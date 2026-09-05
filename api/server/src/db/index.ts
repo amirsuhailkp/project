@@ -1,0 +1,153 @@
+import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
+import { createRequire } from 'node:module';
+import { fileURLToPath } from 'url';
+import { runMigrationsSync } from './migrate/runner.js';
+import { initEncryptionKey, isEncryptionKeyInitialized } from '../lib/crypto.js';
+import { nodeSqliteFactory } from './node-sqlite.js';
+import type { Db, DbFactory } from './types.js';
+
+export type { Db, DbFactory } from './types.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const DB_PATH = path.resolve(__dirname, '../../data/freeapi.db');
+const runtimeRequire = createRequire(import.meta.url);
+
+let db: Db;
+
+export function getDb(): Db {
+  if (!db) {
+    throw new Error('Database not initialized. Call initDb() or connectDb() first.');
+  }
+  return db;
+}
+
+export function getDefaultDbPath(): string {
+  return process.env.FREEAPI_DB_PATH?.trim() || DB_PATH;
+}
+
+/** Default factory: opens a better-sqlite3 connection at the given path. */
+function betterSqliteFactory(resolvedPath: string): Db {
+  let BetterSqlite: new (path: string) => unknown;
+  try {
+    BetterSqlite = runtimeRequire('better-sqlite3') as new (path: string) => unknown;
+  } catch (cause) {
+    throw new Error(
+      'better-sqlite3 is not installed. Reinstall dependencies, or use Node.js 22.13+ on Android/Termux.',
+      { cause },
+    );
+  }
+  return new BetterSqlite(resolvedPath) as Db;
+}
+
+export function defaultDbFactory(platform: NodeJS.Platform = process.platform): DbFactory {
+  return platform === 'android' ? nodeSqliteFactory : betterSqliteFactory;
+}
+
+export function connectDb(
+  dbPath?: string,
+  opts?: {
+    /** Create the parent directory if absent. Default: true. Set false in
+     *  environments that do not have a writable local filesystem. */
+    ensureDir?: boolean;
+    /** Factory that constructs the raw Db connection. Default: better-sqlite3. */
+    factory?: DbFactory;
+  },
+): Db {
+  const resolvedPath = dbPath ?? getDefaultDbPath();
+  const isMemory = resolvedPath === ':memory:';
+  const ensureDir = opts?.ensureDir ?? true;
+  const factory = opts?.factory ?? defaultDbFactory();
+
+  if (!isMemory && ensureDir) {
+    const dataDir = path.dirname(resolvedPath);
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+  }
+
+  db = factory(resolvedPath);
+  if (!isMemory) db.pragma('journal_mode = WAL');
+  db.pragma('foreign_keys = ON');
+  // The dashboard and the proxy hot path write concurrently; without a busy
+  // timeout the loser of a write race gets SQLITE_BUSY immediately and the
+  // request fails. Five seconds is far longer than any write here takes.
+  db.pragma('busy_timeout = 5000');
+
+  if (!isMemory) restrictDbFilePermissions(resolvedPath);
+
+  console.log(`Database initialized at ${resolvedPath}`);
+  return db;
+}
+
+/** Restrict the DB and its WAL sidecars to the owner. The file holds encrypted
+ *  provider keys plus the dashboard password hash, so it must not be readable by
+ *  other local users. Best-effort: filesystems without POSIX modes (Windows,
+ *  some mounts) throw, and that must not stop startup. */
+function restrictDbFilePermissions(resolvedPath: string): void {
+  for (const suffix of ['', '-wal', '-shm']) {
+    const target = `${resolvedPath}${suffix}`;
+    try {
+      if (fs.existsSync(target)) fs.chmodSync(target, 0o600);
+    } catch {
+      // Non-fatal: permissions are a hardening measure, not a correctness one.
+    }
+  }
+}
+
+export function initDb(
+  dbPath?: string,
+  opts?: { ensureDir?: boolean; factory?: DbFactory },
+): Db {
+  const db = connectDb(dbPath, opts);
+
+  if (process.env.NODE_ENV !== 'development') {
+    runMigrationsSync(db, 'up');
+  } else {
+    // In dev, verify the DB has been initialised. If not, give a clear error.
+    const ready = db.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='migrations'"
+    ).get();
+    if (!ready) {
+      console.error(
+        '\n  [dev] Database not initialised. Run:\n\n' +
+        '    npm run db:migration:up\n\n' +
+        '  Then restart the server.\n'
+      );
+      process.exit(1);
+    }
+  }
+
+  if (!isEncryptionKeyInitialized()) initEncryptionKey(db);
+
+  return db;
+}
+
+export function getUnifiedApiKey(): string {
+  const db = getDb();
+  const row = db.prepare("SELECT value FROM settings WHERE key = 'unified_api_key'").get() as { value: string };
+  return row.value;
+}
+
+export function regenerateUnifiedKey(): string {
+  const db = getDb();
+  const key = `freellmapi-${crypto.randomBytes(24).toString('hex')}`;
+  db.prepare("UPDATE settings SET value = ? WHERE key = 'unified_api_key'").run(key);
+  return key;
+}
+
+// Generic key/value settings accessors (used by routing strategy, etc.).
+export function getSetting(key: string): string | undefined {
+  const db = getDb();
+  const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value: string } | undefined;
+  return row?.value;
+}
+
+export function setSetting(key: string, value: string): void {
+  const db = getDb();
+  db.prepare(`
+    INSERT INTO settings (key, value) VALUES (?, ?)
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value
+  `).run(key, value);
+}
